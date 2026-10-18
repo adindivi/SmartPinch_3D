@@ -263,15 +263,15 @@
     </style>
 
     <!-- Three.js for 3D Rendering & Loaders -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/OBJLoader.js"></script>
+    <script src="three/three.min.js"></script>
+    <script src="three/GLTFLoader.js"></script>
+    <script src="three/RoomEnvironment.js"></script>
     
     <!-- MediaPipe Hands for Gesture Recognition -->
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js" crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
+    <script src="mediapipe/camera_utils.js"></script>
+    <script src="mediapipe/control_utils.js"></script>
+    <script src="mediapipe/drawing_utils.js"></script>
+    <script src="mediapipe/hands.js"></script>
 </head>
 <body>
 
@@ -2826,15 +2826,15 @@
                 
                 const hands = new Hands({
                     locateFile: (file) => {
-                        return `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`;
+                        return `https://appassets.androidplatform.net/assets/mediapipe/${file}`;
                     }
                 });
 
                 hands.setOptions({
                     maxNumHands: 2,
                     modelComplexity: 1,
-                    minDetectionConfidence: 0.75, // 오인식 방지를 위해 정확도 기준 상향 조정
-                    minTrackingConfidence: 0.75
+                    minDetectionConfidence: 0.5, // 모바일 인식률 최적화 (기본 권장값 0.5)
+                    minTrackingConfidence: 0.5
                 });
 
                 hands.onResults(onResults);

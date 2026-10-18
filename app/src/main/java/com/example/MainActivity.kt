@@ -21,6 +21,7 @@ import android.webkit.WebResourceRequest
 import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import android.webkit.WebResourceResponse
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -199,10 +200,35 @@ fun CADViewerScreen(
                 }
             }
 
-            // WebViewClient 설정
+            // WebViewClient 설정 (로컬 assets https 가상 도메인 라우팅 및 Fetch/CORS 보안 해제)
             webViewClient = object : WebViewClient() {
                 override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean {
                     return false
+                }
+
+                override fun shouldInterceptRequest(
+                    view: WebView?,
+                    request: WebResourceRequest?
+                ): WebResourceResponse? {
+                    val url = request?.url?.toString() ?: ""
+                    if (url.startsWith("https://appassets.androidplatform.net/assets/")) {
+                        val assetPath = url.replace("https://appassets.androidplatform.net/assets/", "")
+                        try {
+                            val inputStream = context.assets.open(assetPath)
+                            val mimeType = assetPath.getMimeTypeForAsset()
+                            val encoding = if (mimeType.startsWith("text/") || mimeType == "application/javascript" || mimeType == "application/json") "UTF-8" else null
+                            val response = WebResourceResponse(mimeType, encoding, inputStream)
+                            response.responseHeaders = mutableMapOf(
+                                "Access-Control-Allow-Origin" to "*",
+                                "Access-Control-Allow-Methods" to "GET, OPTIONS",
+                                "Access-Control-Allow-Headers" to "*"
+                            )
+                            return response
+                        } catch (e: Exception) {
+                            Log.e("CAD_WebView", "Error loading asset: $assetPath", e)
+                        }
+                    }
+                    return super.shouldInterceptRequest(view, request)
                 }
 
                 override fun onPageFinished(view: WebView?, url: String?) {
@@ -211,8 +237,8 @@ fun CADViewerScreen(
                 }
             }
 
-            // 로컬 Asset index.html 로드
-            loadUrl("file:///android_asset/index.html")
+            // 로컬 Asset index.html을 https 보안 도메인으로 로드 (Fetch 및 WebAssembly 정상 구동)
+            loadUrl("https://appassets.androidplatform.net/assets/index.html")
             onWebViewCreated(this)
         }
     }
@@ -426,4 +452,21 @@ class WebAppInterface(
             }
         }
     }
+}
+
+/**
+ * 에셋 파일 경로를 기반으로 적절한 MIME Type을 반환하는 확장 함수
+ */
+private fun String.getMimeTypeForAsset(): String = when {
+    endsWith(".html", ignoreCase = true) -> "text/html"
+    endsWith(".js", ignoreCase = true) -> "application/javascript"
+    endsWith(".css", ignoreCase = true) -> "text/css"
+    endsWith(".wasm", ignoreCase = true) -> "application/wasm"
+    endsWith(".data", ignoreCase = true) || endsWith(".tflite", ignoreCase = true) || endsWith(".binarypb", ignoreCase = true) -> "application/octet-stream"
+    endsWith(".glb", ignoreCase = true) -> "model/gltf-binary"
+    endsWith(".gltf", ignoreCase = true) -> "model/gltf+json"
+    endsWith(".png", ignoreCase = true) -> "image/png"
+    endsWith(".jpg", ignoreCase = true) || endsWith(".jpeg", ignoreCase = true) -> "image/jpeg"
+    endsWith(".json", ignoreCase = true) -> "application/json"
+    else -> "text/plain"
 }
