@@ -117,6 +117,20 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
+
+    override fun onConfigurationChanged(newConfig: android.content.res.Configuration) {
+        super.onConfigurationChanged(newConfig)
+        currentWebView?.post {
+            currentWebView?.evaluateJavascript("if (typeof onWindowResize === 'function') onWindowResize();", null)
+        }
+    }
+
+    override fun onMultiWindowModeChanged(isInMultiWindowMode: Boolean, newConfig: android.content.res.Configuration) {
+        super.onMultiWindowModeChanged(isInMultiWindowMode, newConfig)
+        currentWebView?.post {
+            currentWebView?.evaluateJavascript("if (typeof onWindowResize === 'function') onWindowResize();", null)
+        }
+    }
 }
 
 /**
@@ -369,6 +383,24 @@ class WebAppInterface(
     fun requestCameraPermission() {
         mainHandler.post {
             onRequestCameraPermission()
+        }
+    }
+
+    /**
+     * 삼성 DeX 데스크톱 모드 활성화 여부 확인
+     */
+    @JavascriptInterface
+    fun isDeXMode(): Boolean {
+        val config = context.resources.configuration
+        return try {
+            val configClass = config.javaClass
+            val semDesktopModeEnabledField = configClass.getField("SEM_DESKTOP_MODE_ENABLED")
+            val semDesktopModeEnabled = semDesktopModeEnabledField.getInt(configClass)
+            val semDesktopModeStateField = configClass.getField("semDesktopModeState")
+            val semDesktopModeState = semDesktopModeStateField.getInt(config)
+            semDesktopModeState == semDesktopModeEnabled
+        } catch (_: Exception) {
+            false
         }
     }
 
